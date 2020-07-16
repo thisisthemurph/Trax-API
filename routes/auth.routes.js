@@ -12,8 +12,10 @@ router.post("/register", async (req, res) => {
 	const { error } = validation.registrationUserValidaion(req.body)
 	if (error) return res.status(400).json({ success: false, msg: error.details[0].message })
 
+	const email = req.body.email.toLowerCase()
+
 	// Does the user already exist
-	const emailExists = await UserModel.findOne({ email: req.body.email })
+	const emailExists = await UserModel.findOne({ email })
 	if (emailExists)
 		return res.status(400).json({
 			success: false,
@@ -40,14 +42,14 @@ router.post("/register", async (req, res) => {
 
 	const user = new UserModel({
 		name: req.body.name,
-		email: req.body.email,
+		email: email,
 		sex: req.body.sex,
 		password: hash,
 	})
 
 	try {
 		const savedUser = await user.save()
-		res.json({
+		return res.json({
 			success: true,
 			user: {
 				_id: savedUser._id,
@@ -57,7 +59,7 @@ router.post("/register", async (req, res) => {
 			},
 		})
 	} catch (err) {
-		res.status(500).json({
+		return res.status(500).json({
 			success: false,
 			msg: "It has not been possible to create an account at this time",
 			error: err,
@@ -70,8 +72,10 @@ router.post("/login", async (req, res) => {
 	const { error } = validation.loginUserValidaion(req.body)
 	if (error) return res.status(400).json({ success: false, msg: error.details[0].message })
 
+	const email = req.body.email.toLowerCase()
+
 	// Does the user exist?
-	const user = await UserModel.findOne({ email: req.body.email })
+	const user = await UserModel.findOne({ email })
 	if (!user)
 		return res.status(404).json({
 			success: false,
@@ -88,13 +92,13 @@ router.post("/login", async (req, res) => {
 
 	// Create a JWT
 	const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET)
-	res.header("auth-token", token).json({
+	return res.header("auth-token", token).json({
 		success: true,
 		token,
 		user: {
 			id: user._id,
 			name: user.name,
-			email: user.email,
+			email: email.email,
 			sex: user.sex,
 		},
 	})
